@@ -80,11 +80,40 @@ class InvertedIndexTestClass(unittest.TestCase):
             output_data = f.read()
 
         json_data = self.data_to_dictionary(output_data)
-
         shouldBeTrue = True
         shouldBeTrue &= json_data['care']['input1.txt'] == 1
         shouldBeTrue &= json_data['fi']['input1.txt'] == 1
         shouldBeTrue &= json_data['ep']['input2.txt'] == 1
+
+        with open(self.OUTPUT_DIR_2+"/reduce/g-p.txt", 'r') as f:
+            output_data = f.read()
+
+        json_data = self.data_to_dictionary(output_data)
+        shouldBeTrue &= json_data['proiect']['input2.txt'] == 1
+        shouldBeTrue &= json_data['propozitie']['input1.txt'] == 1
+
+        with open(self.OUTPUT_DIR_2+"/reduce/q-z.txt", 'r') as f:
+            output_data = f.read()
+
+        json_data = self.data_to_dictionary(output_data)
+        shouldBeTrue &= json_data['testata']['input1.txt'] == 1
+        shouldBeTrue &= json_data['va']['input1.txt'] == 1
+        shouldBeTrue &= json_data['text']['input3.txt'] == 1
+        shouldBeTrue &= json_data['random']['input3.txt'] == 1
+
+        self.assertTrue(shouldBeTrue)
+
+    def test_reducer_input_files_3(self):
+        os.system("mpiexec --hostfile ../hostfile -n {} python3 ../main.py {} {}".format(5, self.INPUT_DIR_3, self.OUTPUT_DIR_3))
+        
+        with open(self.OUTPUT_DIR_3+"/reduce/a-f.txt", 'r') as f:
+            output_data = f.read()
+
+        json_data = self.data_to_dictionary(output_data)
+        shouldBeTrue = True
+        shouldBeTrue &= json_data['aici']['input1.txt'] == 28
+        shouldBeTrue &= json_data['aici']['input2.txt'] == 26
+        shouldBeTrue &= json_data['aicinu']['input2.txt'] == 2
 
         self.assertTrue(shouldBeTrue)
 
