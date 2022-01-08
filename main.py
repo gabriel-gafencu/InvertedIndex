@@ -3,6 +3,7 @@ import sys
 import re
 import json
 import os
+import time
 
 BEGIN = 0
 END = 1
@@ -148,12 +149,102 @@ Se demonstreaza corectitudinea pentru secventa de reducere a fiecarui proces.
             f(n) = n - n = 0
             e)Algoritmul se termină după un număr finit de pași(adevarat), caci functia de terminare descreste spre 0.
 
+Complexitate
+    Se determina complexitatea algoritmului de calcul a inverted index pentru un singur proces. Se vor lua in considerare doar operatiile
+    elementare(operatii aritmetice, atribuiri, comparatii). Nu se vor lua in calcul afisarile sau trimiterea de mesaje de la un nod la altul. 
+    Complexitatile se vor determina separat pentru procesul de map si pentru cel de reduce, pentru ca fiecare pas are un anumit tip de input si respectiv
+    de output.
+    Pentru buclele de tipul for din python, s-a calculat complexitatea dupa modelul buclelor din limbajul C. De exemplu:
+    for file in files: 
+        ->
+    for(int i=0;i<files.length;i++)//avem 2*(files.length + 1 ) operatii
+    {
+        //se realizeaza alte operatii folosind files[i]
+    }
+
+    De asemenea, la fel s-a procedat si pentru buclele while.
+    while True: 
+        #citire linia urmatoare din fisier
+        ......
+        #prinde exceptie NuMaiSuntLiniiInFisier
+            break
+
+        ->
+
+    int i=0;
+    while(i<linesSize)
+    {
+        //prelucrare
+
+        i++;
+    }
+
+    Procesul de mapare:
+        Aici, fisierele de intrare sunt reprezentate de fisiere de tip text.
+        Ideea procesului de mapare este de a crea o serie de fisiere in care sa scrie toate cuvintele dintr-un fisier alaturi fisierul de origine al acestuia.
+        Aceste fisiere vor fi input-ul procesului de reducere.
+
+        Notatii folosite:
+        n - numarul de fisiere de prelucrat(pentru un nod)
+        l - numarul de linii dintr-un fisier
+        m - numarul de cuvinte de pe o linie
+
+        Complexitatea timp
+            In cazul cel mai favorabil: Exista un singur fisier cu 0 linii(nu contine niciun cuvant)
+            Tfav(n, l, m) = 2 + 4 + 1 + 4 + 4(pentru ca in for-ul principal se va arunca imediat o exceptie) = 15
+
+            In cazul cel mai defavorabil: Este un caz abstract, fiind reprezentat de un numar infinit de fisiere care tinde la infinit, fiecare fisier avand un numar de cuvinte care tinde la infinit.
+            Deci cazul mediu nu poate fi determinat.
+
+            Cazul general:
+            Tgen(n, l, m) = 3 + 2*(n+1) + 2*(n+1) +  l*n + n*l*2*(m+1) + (while-ul se ocupa de citirea liniilor, iar apoi avem un for pentru fiecare cuvant de pe linie) +
+             + n*l*m(de cate ori se executa comparatia len(word)>0 ) = (3m+2)nl + 2ln + 4(n+1) + 3
+            
+            Dupa cum se observa, avem doar o margine inferioara pentru procesul de mapare, deci
+            Omega(n, l, m) = (3m+2)nl + 2ln + 4(n+1) + 3
+
+        Complexitatea spatiu
+            Pentru complexitatea spatiu, se iau in calcul doar structurile necesare pentru construirea output-ului(nu si varriabilele intermediare care nu depind de intrari), 
+            si in acest caz avem:
+            Tspatiu(n, l, m) = O(n*(m+l)) pentru ca pentru fiecare fisier, salvam fiecare linie in variabila line si apoi lista de cuvinte in words.
+        
+    Procesul de reducere:
+        Aici, fisierele de intrare sunt reprezentate de fisiere de tip text, rezultate in urma procesului de mapare. Pe fiecare linie gasim o intrare de forma:
+        <cuvant> <fisierul_de_provenienta_al_cuvantului>.
+        Ideea procesului de reducere este de a determina in ce fisiere apare un cuvant si de cate ori apare.
+
+        Notatii folosite:
+        n - numarul de fisiere de prelucrat(pentru un nod)
+        l - numarul de linii dintr-un fisier
+        k - numarul total de cuvinte distincte din fisier de intrare
+        m - numarul de aparitii al aceluiasi cuvant in toate fisierel de intrare
+
+        Complexitatea timp
+            In cazul cel mai favorabil: Exista un singur fisier cu 0 linii.
+            Tfav(n, l) = 2 + 4 + 1 + 4(for-ul principal va arunca o exceptie pentru ca nu vor fi linii in fisier) + 1(sortarea nu se va intapla, deoarece dictionarul este gol) + 4 = 16
+
+            In cazul cel mai defavorabil: In acest caz, se repeta situatia de la procesul de mapare, in care marimea datelor de intrare tinde la infinit, si deci, nu se va putea determina 
+            un caz mediu.
+
+            Cazul general
+            Tgen(n, l, k, m) = 2 + 2(n+1) +  2(n+1) + l*n + n*l + n*l*3 + k*log(k)(pentru prima sortare a dinctionarului) + k*m*log(m)(a doua sortare) =
+            = 5nl + 4(n+1) +  klog(k) + kmlog(m) + 2
+
+            Dupa cum se observa, avem doar o margine inferioara pentru procesul de reducere, deci
+            Omega(n, l, k, m) = 5nl + 4(n+1) +  klog(k) + kmlog(m) + 2
+
+        Complexitatea spatiu
+            Tspatiu(n, l, m) = O(n*k*m)) pentru ca avem strucutura terms care este un dictonar de dicionare. Primul dictionar retine lista de cuvinte unice, care reprezinta cheia catre
+            al doilea dicitionar. Acesta retine in ce fisierele se afla cuvantul cheie si de cate ori se repeta in acel fisier.
+
 
 
 '''
 
 
 if rank == master:
+    start = time.time()
+
     # Master delegates tasks according to rank and orchestrates the map-reduce process
 
     # Printing status for curent execution
@@ -197,6 +288,9 @@ if rank == master:
     print('Reducers finished.')
     print('Map-reduce process finished.')
     sys.stdout.flush()
+
+    end = time.time()
+    print("Total running time with %s processes: %s seconds." % (size - 1, end - start))
 
 elif rank in mappers:
     # wait for master to signal start
