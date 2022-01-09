@@ -8,6 +8,7 @@ import time
 BEGIN = 0
 END = 1
 
+# Number of ranks that are reserved for: 1 for master and 3 for reducers (there can be 1 or multiple reducers)
 N_RESERVED_RANKS = 4
 
 comm = MPI.COMM_WORLD
@@ -18,6 +19,8 @@ master = 0
 mappers = [] #[1, 2, 3, 4, 5]
 reducers = [1, 2, 3]  #[6, 7, 8]
 
+# Checking the numbers of parameters
+# There must be 2 parameters: <input-directory> and <output-directory>
 if len(sys.argv) != 2:
     if size <= N_RESERVED_RANKS:
         raise Exception("Number of processes must be greater than 4.")
@@ -26,17 +29,14 @@ if len(sys.argv) != 2:
 else:
     raise Exception("Program taken {} arguments but {} provided.\nExample: python <input-dir> <output-dir>\n".format(2, len(sys.argv)))
 
+# The directory in which the input files are located
 INPUT_DIR = sys.argv[1]
+# The directory in which the output files will be located (it is created at program start up)
 BASE_DIR = sys.argv[2]
+
+# Const values that specifies the name of the map and reducer output directories
 MAPPERS_DIR = BASE_DIR+"/map"
 REDUCERS_DIR = BASE_DIR+"/reduce"
-
-# if rank == 0:
-#     pass
-# else:
-#     sys.exit(0)
-
-
 
 '''
 Deoarece algoritmul de calcul a Inverted Index este bazat pe algoritmul map-reduce, care se foloseste de paradigma 
@@ -253,11 +253,10 @@ if rank == master:
     print("Mappers: {}".format(mappers))
     print("Reducers: {}".format(reducers))
     print("Input directory: {}".format(INPUT_DIR))
-    print("Output directory: {}\n".format(BASE_DIR))
+    print("Output directory: {}\n\n".format(BASE_DIR))
 
 
-    # Creating directories for storing the results
-    
+    # Creating directories for storing the results if these directories does not exists
     if os.path.exists(BASE_DIR) == False:
         os.mkdir(BASE_DIR)
     
@@ -298,17 +297,19 @@ elif rank in mappers:
     print('{} beginning mapping process.'.format(rank))
     sys.stdout.flush()
 
-    # each mapper is responsible for 5 files:
-    # process 1 for 1-5, process 2 for 6-10, ect.
-
+    # Number of mappers
     N_MAPPERS = size - N_RESERVED_RANKS
+    # Mapper index within the mapper list
     MAPPER_INDEX = rank - N_RESERVED_RANKS
 
+    # All files form the input directory
     all_files = [file for file in os.listdir(INPUT_DIR)]
+    # Minimum files per process    
     files_per_process = int(len(all_files) / N_MAPPERS)
-
+    # Every process takes first 'files_per_process' files at first
     my_files = [all_files[file_index] for file_index in range(MAPPER_INDEX * files_per_process, (MAPPER_INDEX + 1) * files_per_process)]
     
+    # If there are any files left, every process takes one file from the remaining ones
     for file_index in range(N_MAPPERS * files_per_process, len(all_files)):
         if file_index % files_per_process == MAPPER_INDEX:
             my_files.append(all_files[file_index]) 
@@ -367,11 +368,15 @@ elif rank in reducers:
         }
     }
 
+    # Reducer rank within reducer list
     reducer_rank = str(rank - reducers[0])
+
+    # Make a list of lettters representing the files according to the ranges above
     my_files = ['{}.txt'.format(chr(x)) for x in range(ord(limiters[reducer_rank]['start']), ord(limiters[reducer_rank]['stop']) + 1)]
+    # Output file
     end_file = '{}/{}-{}.txt'.format(REDUCERS_DIR,limiters[reducer_rank]['start'], limiters[reducer_rank]['stop'])
 
-    #de aici demonstrez corectitudinea pentru reducer
+    # de aici demonstrez corectitudinea pentru reducer
     for file in my_files:
         terms = {}
         try:
