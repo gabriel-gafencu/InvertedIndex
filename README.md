@@ -21,3 +21,9 @@ The script can be executed using the below command:
 <li> <code>number-of-processes</code> is the number of running processes (must be greater than 4)</li>
 <li> <code>input-dir</code> is the directory that contains the input files</li>
 <li> <code>output-dir</code> is the directory created at run time which contains the output files</li>
+
+The testcases can be executed using the below command:
+
+```python3 -m unittest test_cases.py``` where:
+<li>test_cases.py is located in test-cases</li>
+
