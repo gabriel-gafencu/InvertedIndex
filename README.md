@@ -26,5 +26,5 @@ The script can be executed using the below command:
 The testcases can be executed using the below command:
 
 ```python3 -m unittest test_cases.py``` where:
-<li>test_cases.py is located in test-cases</li>
+<li><code>test_cases.py</code> file is located in test-cases directory</li>
 
